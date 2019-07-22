@@ -13,6 +13,8 @@ import seed.model.Build.{Module, Project}
 import seed.model.Platform.JVM
 import seed.model.{Build, Config}
 
+import seed.generation.util.BuildUtil.tempPath
+
 object IdeaSpec extends SimpleTestSuite {
   test("Normalise paths") {
     assertEquals(
@@ -74,10 +76,12 @@ object IdeaSpec extends SimpleTestSuite {
       Paths.get("test/compiler-options"), Log.urgent).get
     val packageConfig = PackageConfig(tmpfs = false, silent = false,
       ivyPath = None, cachePath = None)
-    cli.Generate.ui(Config(), projectPath, build, Command.Idea(packageConfig),
-      Log.urgent)
+    val outputPath = tempPath.resolve("compiler-options")
+    Files.createDirectory(outputPath)
+    cli.Generate.ui(Config(), projectPath, outputPath, build,
+      Command.Idea(packageConfig), Log.urgent)
 
-    val ideaPath = projectPath.resolve(".idea")
+    val ideaPath = outputPath.resolve(".idea")
 
     val scalaCompiler =
       pine.XmlParser.fromString(FileUtils.readFileToString(
@@ -97,10 +101,12 @@ object IdeaSpec extends SimpleTestSuite {
       Paths.get("test/multiple-scala-versions"), Log.urgent).get
     val packageConfig = PackageConfig(tmpfs = false, silent = false,
       ivyPath = None, cachePath = None)
-    cli.Generate.ui(Config(), projectPath, build, Command.Idea(packageConfig),
-      Log.urgent)
+    val outputPath = tempPath.resolve("multiple-scala-versions-idea")
+    Files.createDirectory(outputPath)
+    cli.Generate.ui(Config(), projectPath, outputPath, build,
+      Command.Idea(packageConfig), Log.urgent)
 
-    val ideaPath = projectPath.resolve(".idea")
+    val ideaPath = outputPath.resolve(".idea")
 
     val scalaCompiler =
       pine.XmlParser.fromString(FileUtils.readFileToString(
