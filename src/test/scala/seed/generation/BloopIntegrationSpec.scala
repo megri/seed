@@ -39,6 +39,7 @@ object BloopIntegrationSpec extends TestSuite[Unit] {
   def compileAndRun(projectPath: Path) = {
     def compile =
       TestProcessHelper.runBloop(projectPath)("compile", "example").map { x =>
+        println(s"[compile] $x")
         assert(x.contains("Compiled example-jvm"))
         assert(x.contains("Compiled example-js"))
       }
@@ -46,6 +47,7 @@ object BloopIntegrationSpec extends TestSuite[Unit] {
     def run =
       TestProcessHelper.runBloop(projectPath)("run", "example-js", "example-jvm")
         .map { x =>
+          println(s"[run] $x")
           assertEquals(x.split("\n").count(_ == "hello"), 2)
         }
 
