@@ -31,6 +31,15 @@ object IdeaSpec extends SimpleTestSuite {
       "/tmp/build")
   }
 
+  test("Do not resolve symbolic links when normalising paths") {
+    Files.deleteIfExists(Paths.get("/tmp/tmp-link"))
+    Files.createSymbolicLink(Paths.get("/tmp/tmp-link"), Paths.get("/tmp"))
+
+    assertEquals(
+      PathUtil.normalisePath(Idea.ModuleDir, Paths.get(".idea/modules"))(Paths.get("/tmp/tmp-link")),
+      "/tmp/tmp-link")
+  }
+
   test("Generate modules") {
     val build =
       Build(
