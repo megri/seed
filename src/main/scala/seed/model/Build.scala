@@ -60,12 +60,17 @@ object Build {
                      compilerDeps: List[ScalaDep] = List())
 
   case class Module(scalaVersion: Option[String] = None,
+                    scalaJsVersion: Option[String] = None,
+                    scalaNativeVersion: Option[String] = None,
+                    scalaOptions: List[String] = List(),
+                    testFrameworks: List[String] = List(),
+                    compilerDeps: List[ScalaDep] = List(),
+
                     root: Option[Path] = None,
                     sources: List[Path] = List(),
                     resources: List[Path] = List(),
                     scalaDeps: List[ScalaDep] = List(),
                     javaDeps: List[JavaDep] = List(),
-                    compilerDeps: List[ScalaDep] = List(),
                     moduleDeps: List[String] = List(),
                     mainClass: Option[String] = None,
                     targets: List[Platform] = List(),

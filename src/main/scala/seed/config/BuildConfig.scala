@@ -79,16 +79,16 @@ object BuildConfig {
 
     val imported = parsed.`import`.flatMap(parse(_))
 
-    val parsedModules = parsed.module.mapValues(inheritCompilerDeps(parsed.project))
+    val parsedModules = parsed.module.mapValues(mergeModuleSettings(parsed.project, Module()))
 
     val importedModules = imported.foldLeft(Map.empty[String, Module]) {
-      case (acc, (importedBuild, importedPaths)) =>
-        acc ++ importedBuild.module.mapValues(inheritCompilerDeps(importedBuild.project))
+      case (acc, (importedBuild, _)) =>
+        acc ++ importedBuild.module.mapValues(mergeModuleSettings(importedBuild.project, Module()))
     }
 
     val combinedBuild = parsed.copy(
       project = parsed.project.copy(
-        testFrameworks = (parsed.project.testFrameworks ++ imported.flatMap(_._1.project.testFrameworks)).distinct
+        testFrameworks = (parsed.project.testFrameworks ++ imported.flatMap(_._1.project.testFrameworks)).distinct,
       ),
       module = parsedModules ++ importedModules)
 
@@ -100,12 +100,31 @@ object BuildConfig {
     (combinedBuild, moduleProjectPaths)
   }
 
-  def inheritCompilerDeps(project: Project)(module: Module): Module =
-    module.copy(
-      compilerDeps = (project.compilerDeps ++ module.compilerDeps).distinct,
-      jvm = module.jvm.map(inheritCompilerDeps(project)),
-      js = module.js.map(inheritCompilerDeps(project)),
-      native = module.native.map(inheritCompilerDeps(project)))
+  /**
+    * Combines settings from `base` and/or `project` into `target`.
+    *
+    * Collection properties are merged according to: (target.<prop> ++ base.<prop> ++ project.<prop>).distinct
+    * Optional properties are resolved according to: target.<prop> orElse base.<prop> orElse project.<prop>
+    *
+    * @param project
+    * @param base
+    * @param target
+    * @return
+    */
+  def mergeModuleSettings(project: Project, base: Module)(target: Module): Module = {
+    val eagerlyMerged = target.copy(
+      scalaVersion = target.scalaVersion.orElse(base.scalaVersion).orElse(Some(project.scalaVersion)),
+      scalaJsVersion = target.scalaJsVersion.orElse(base.scalaJsVersion).orElse(project.scalaJsVersion),
+      scalaNativeVersion = target.scalaNativeVersion.orElse(base.scalaNativeVersion).orElse(project.scalaNativeVersion),
+      scalaOptions = (target.scalaOptions ++ base.scalaOptions ++ project.scalaOptions).distinct,
+      testFrameworks = (target.testFrameworks ++ base.testFrameworks ++ project.testFrameworks).distinct,
+      compilerDeps = (target.compilerDeps ++ base.compilerDeps ++ project.compilerDeps).distinct)
+
+    eagerlyMerged.copy(
+      jvm = eagerlyMerged.jvm.map(mergeModuleSettings(project, eagerlyMerged)),
+      js = eagerlyMerged.js.map(mergeModuleSettings(project, eagerlyMerged)),
+      native = eagerlyMerged.native.map(mergeModuleSettings(project, eagerlyMerged)))
+  }
 
   def moduleTargets(module: Build.Module,
                     otherTargets: List[Platform]): List[Platform] = (
